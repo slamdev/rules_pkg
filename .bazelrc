@@ -1,0 +1,2 @@
+build --nolegacy_external_runfiles
+try-import %workspace%/.bazelrc.user

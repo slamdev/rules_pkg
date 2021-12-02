@@ -1,0 +1,55 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("//pkg:defs.bzl", "pkg_tar")
+
+write_file(
+    name = "file_a",
+    out = "file_a.txt",
+    content = ["file a"],
+)
+
+write_file(
+    name = "file_b",
+    out = "file_b.txt",
+    content = ["file b"],
+)
+
+pkg_tar(
+    name = "tar",
+    srcs = [
+        ":file_a",
+        ":file_b",
+    ],
+    package_dir = "/some/thing",
+    visibility = ["//example/file_size:__pkg__"],
+)
+
+write_file(
+    name = "tar_test_script",
+    out = "tar_test.sh",
+    content = ["""
+       echo "$@"
+        if ! tar tf $1 | grep -E '/some/thing/.+/bin/example/pkg_tar/file_a.txt'; then
+          echo 'failed to grep path to file_a'
+          exit 1
+        fi
+        if ! tar tf $1 | grep -E '/some/thing/.+/bin/example/pkg_tar/file_a.txt'; then
+          echo 'failed to grep path to file_b'
+          exit 1
+        fi
+        if ! zgrep 'file a' $1; then
+          echo 'failed to zgrep path to file_a'
+          exit 1
+        fi
+        if ! zgrep 'file a' $1; then
+          echo 'failed to zgrep path to file_b'
+          exit 1
+        fi
+    """],
+)
+
+sh_test(
+    name = "tar_test",
+    srcs = [":tar_test_script"],
+    args = ["$(rootpath :tar)"],
+    data = [":tar"],
+)

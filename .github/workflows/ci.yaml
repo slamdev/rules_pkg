@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: { }
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+        bazel: [ 4.2.1, 5.0.0-pre.20211011.2 ]
+    runs-on: ${{ matrix.os }}
+    name: test-on-${{ matrix.os }}-with-bazel-${{ matrix.bazel }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: bazelbuild/setup-bazelisk@v1
+      - name: Mount bazel action cache
+        uses: actions/cache@v2
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+      - name: Mount bazel repo cache
+        uses: actions/cache@v2
+        with:
+          path: "~/.cache/bazel-repo"
+          key: bazel-repo
+      - name: Set Bazelisk Version ${{ matrix.bazel }}
+        run: echo ${{ matrix.bazel }} > .bazelversion
+      - name: Build
+        shell: bash
+        env:
+          XDG_CACHE_HOME: ~/.cache/bazel-repo
+        run: bazel --bazelrc=.github/workflows/ci.bazelrc --bazelrc=.bazelrc build ...
+      - name: Test
+        shell: bash
+        env:
+          XDG_CACHE_HOME: ~/.cache/bazel-repo
+        run: bazel --bazelrc=.github/workflows/ci.bazelrc --bazelrc=.bazelrc test ...

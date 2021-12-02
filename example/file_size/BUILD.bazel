@@ -1,0 +1,25 @@
+load("//pkg:defs.bzl", "file_size")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+
+file_size(
+    name = "file_size",
+    file = "//example/pkg_tar:tar",
+)
+
+write_file(
+    name = "file_size_test_script",
+    out = "file_size_test.sh",
+    content = ["""
+        if ! sh "$1" | grep 3072; then
+          echo 'failed to grep file size'
+          exit 1
+        fi
+    """],
+)
+
+sh_test(
+    name = "file_size_test",
+    srcs = [":file_size_test_script"],
+    args = ["$(rootpath :file_size)"],
+    data = [":file_size"],
+)
